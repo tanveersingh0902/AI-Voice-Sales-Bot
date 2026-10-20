@@ -85,7 +85,7 @@ export default function CallHistory({ history, onClear }) {
                     <ul className="space-y-1">
                       {call.summary.customerRequirements.map((r, i) => (
                         <li key={i} className="text-sm text-slate-400 flex items-start gap-2">
-                          <span className="text-blue-400">\u2022</span>{r}
+                          <span className="text-blue-400">•</span>{r}
                         </li>
                       ))}
                     </ul>
@@ -99,7 +99,7 @@ export default function CallHistory({ history, onClear }) {
                     <ul className="space-y-1">
                       {call.summary.objections.map((o, i) => (
                         <li key={i} className="text-sm text-slate-400 flex items-start gap-2">
-                          <span className="text-amber-400">\u2022</span>{o}
+                          <span className="text-amber-400">•</span>{o}
                         </li>
                       ))}
                     </ul>
@@ -113,7 +113,7 @@ export default function CallHistory({ history, onClear }) {
                     <ul className="space-y-1">
                       {call.summary.nextSteps.map((s, i) => (
                         <li key={i} className="text-sm text-slate-400 flex items-start gap-2">
-                          <span className="text-emerald-400">\u2022</span>{s}
+                          <span className="text-emerald-400">•</span>{s}
                         </li>
                       ))}
                     </ul>
