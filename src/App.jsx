@@ -4,6 +4,7 @@ import { useCallTimer } from './hooks/useCallTimer';
 import { useCallHistory } from './hooks/useCallHistory';
 import { generateCallSummary } from './services/geminiService';
 import { fetchRecordingUrl } from './services/vapiRecording';
+import SetupScreen from './components/SetupScreen';
 import StatusBadge from './components/StatusBadge';
 import BotAvatar from './components/BotAvatar';
 import ChatPanel from './components/ChatPanel';
@@ -14,7 +15,7 @@ import ConsentBanner from './components/ConsentBanner';
 import ErrorBanner from './components/ErrorBanner';
 import CallHistory from './pages/CallHistory';
 
-export default function App() {
+function VoiceAgentApp() {
   const [activeTab, setActiveTab] = useState('call');
   const [showConsent, setShowConsent] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
@@ -224,4 +225,12 @@ export default function App() {
       </main>
     </div>
   );
+}
+
+export default function App() {
+  if (!import.meta.env.VITE_VAPI_PUBLIC_KEY) {
+    return <SetupScreen />;
+  }
+
+  return <VoiceAgentApp />;
 }
