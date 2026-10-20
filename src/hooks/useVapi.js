@@ -106,20 +106,13 @@ export function useVapi() {
   }, []);
 
   const startCall = useCallback(async () => {
+    if (!vapiRef.current) return;
+
     try {
       setError(null);
       setMessages([]);
       setStatus('connecting');
       setCallId(null);
-
-      if (!vapiRef.current) {
-        const publicKey = import.meta.env.VITE_VAPI_PUBLIC_KEY;
-        if (!publicKey) {
-          throw new Error('VITE_VAPI_PUBLIC_KEY is not configured. Please add it to your .env file.');
-        }
-        const VapiClass = getVapiConstructor();
-        vapiRef.current = new VapiClass(publicKey);
-      }
 
       const assistantId = import.meta.env.VITE_VAPI_ASSISTANT_ID;
 
