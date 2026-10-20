@@ -12,25 +12,35 @@ export async function fetchRecordingUrl(callId) {
     return null;
   }
 
-  try {
-    // Wait a few seconds for recording to process
-    await new Promise((r) => setTimeout(r, 3000));
+  const maxRetries = 5;
+  const pollIntervalMs = 3000;
 
-    const response = await fetch(`${VAPI_API_URL}/call/${callId}`, {
-      headers: {
-        Authorization: `Bearer ${privateKey}`,
-      },
-    });
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await new Promise((r) => setTimeout(r, pollIntervalMs));
 
-    if (!response.ok) {
-      console.error(`Failed to fetch call details: ${response.status}`);
+      const response = await fetch(`${VAPI_API_URL}/call/${callId}`, {
+        headers: {
+          Authorization: `Bearer ${privateKey}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`Failed to fetch call details: ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      const recordingUrl = data?.recordingUrl || data?.artifact?.recordingUrl || null;
+
+      if (recordingUrl) {
+        return recordingUrl;
+      }
+    } catch (err) {
+      console.error('Error fetching recording:', err);
       return null;
     }
-
-    const data = await response.json();
-    return data?.recordingUrl || data?.artifact?.recordingUrl || null;
-  } catch (err) {
-    console.error('Error fetching recording:', err);
-    return null;
   }
+
+  return null;
 }
