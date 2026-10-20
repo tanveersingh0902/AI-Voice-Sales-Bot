@@ -35,7 +35,6 @@ export function useVapi() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState(null);
   const vapiRef = useRef(null);
-  const callStartTimeRef = useRef(null);
 
   useEffect(() => {
     const publicKey = import.meta.env.VITE_VAPI_PUBLIC_KEY;
@@ -52,7 +51,6 @@ export function useVapi() {
       vapi.on('call-start', () => {
         setStatus('live');
         setError(null);
-        callStartTimeRef.current = Date.now();
       });
 
       vapi.on('call-end', () => {
@@ -150,11 +148,6 @@ export function useVapi() {
     }
   }, []);
 
-  const getCallDurationMs = useCallback(() => {
-    if (!callStartTimeRef.current) return 0;
-    return Date.now() - callStartTimeRef.current;
-  }, []);
-
   return {
     status,
     messages,
@@ -163,7 +156,6 @@ export function useVapi() {
     error,
     startCall,
     endCall,
-    getCallDurationMs,
     setStatus,
   };
 }
