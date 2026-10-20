@@ -51,7 +51,9 @@ export default function CallHistory({ history, onClear }) {
             >
               <div className="flex items-center gap-4">
                 <div className="text-left">
-                  <p className="text-sm font-medium">{call.summary?.customerName || 'Unknown Customer'}</p>
+                  <p className="text-sm font-medium">
+                    {call.summary?.customerName || call.transcript?.[0]?.text?.slice(0, 30) || 'Unknown Customer'}
+                  </p>
                   <p className="text-xs text-slate-500">{call.date}</p>
                 </div>
               </div>
