@@ -1,5 +1,4 @@
-const DEFAULT_MODEL = 'gemini-2.5-flash';
-const FALLBACK_MODEL = 'gemini-2.0-flash';
+const DEFAULT_MODEL = 'gemini-2.0-flash';
 
 async function callGeminiApi(model, apiKey, prompt) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
@@ -95,12 +94,7 @@ If no objections were raised, use an empty array. Always provide at least one ne
 
   try {
     const configuredModel = import.meta.env.VITE_GEMINI_MODEL || DEFAULT_MODEL;
-    let response = await callGeminiApi(configuredModel, apiKey, prompt);
-
-    // If default model returns 404, retry with fallback model
-    if (!response.ok && response.status === 404 && configuredModel === DEFAULT_MODEL) {
-      response = await callGeminiApi(FALLBACK_MODEL, apiKey, prompt);
-    }
+    const response = await callGeminiApi(configuredModel, apiKey, prompt);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -126,4 +120,3 @@ If no objections were raised, use an empty array. Always provide at least one ne
     throw err;
   }
 }
-
