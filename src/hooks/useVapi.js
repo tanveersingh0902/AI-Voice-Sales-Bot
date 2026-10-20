@@ -28,6 +28,11 @@ const ASSISTANT_CONFIG = {
   name: 'NexaCRM Sales Assistant',
 };
 
+function getEnv(key) {
+  if (typeof window === 'undefined') return '';
+  return import.meta.env[key] || localStorage.getItem(key) || '';
+}
+
 export function useVapi() {
   const [status, setStatus] = useState('idle');
   const [messages, setMessages] = useState([]);
@@ -37,9 +42,9 @@ export function useVapi() {
   const vapiRef = useRef(null);
 
   useEffect(() => {
-    const publicKey = import.meta.env.VITE_VAPI_PUBLIC_KEY;
+    const publicKey = getEnv('VITE_VAPI_PUBLIC_KEY');
     if (!publicKey) {
-      setError('VITE_VAPI_PUBLIC_KEY is not configured. Please add it to your .env file.');
+      setError('VITE_VAPI_PUBLIC_KEY is not configured. Please add it to your .env file or configuration.');
       return;
     }
 
@@ -114,7 +119,7 @@ export function useVapi() {
       setStatus('connecting');
       setCallId(null);
 
-      const assistantId = import.meta.env.VITE_VAPI_ASSISTANT_ID;
+      const assistantId = getEnv('VITE_VAPI_ASSISTANT_ID');
 
       let call;
       if (assistantId) {

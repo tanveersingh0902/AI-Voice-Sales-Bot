@@ -1,7 +1,12 @@
 const VAPI_API_URL = 'https://api.vapi.ai';
 
+function getEnv(key) {
+  if (typeof window === 'undefined') return '';
+  return import.meta.env[key] || localStorage.getItem(key) || '';
+}
+
 export async function fetchRecordingUrl(callId) {
-  const privateKey = import.meta.env.VITE_VAPI_PRIVATE_KEY;
+  const privateKey = getEnv('VITE_VAPI_PRIVATE_KEY');
 
   if (!privateKey) {
     console.warn('VITE_VAPI_PRIVATE_KEY not configured — cannot fetch recording.');

@@ -64,11 +64,16 @@ async function callGeminiApi(model, apiKey, prompt) {
   });
 }
 
+function getEnv(key) {
+  if (typeof window === 'undefined') return '';
+  return import.meta.env[key] || localStorage.getItem(key) || '';
+}
+
 export async function generateCallSummary(transcript) {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const apiKey = getEnv('VITE_GEMINI_API_KEY');
 
   if (!apiKey) {
-    throw new Error('Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
+    throw new Error('Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file or settings.');
   }
 
   const formattedTranscript = transcript
@@ -93,7 +98,7 @@ Respond with ONLY valid JSON in this exact format:
 If no objections were raised, use an empty array. Always provide at least one next step.`;
 
   try {
-    const configuredModel = import.meta.env.VITE_GEMINI_MODEL || DEFAULT_MODEL;
+    const configuredModel = getEnv('VITE_GEMINI_MODEL') || DEFAULT_MODEL;
     const response = await callGeminiApi(configuredModel, apiKey, prompt);
 
     if (!response.ok) {
