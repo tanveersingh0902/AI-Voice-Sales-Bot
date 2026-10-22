@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Vapi from '@vapi-ai/web';
+import { getPublic } from '../services/publicConfig';
 
 function getVapiConstructor() {
   if (typeof Vapi === 'function') return Vapi;
@@ -20,18 +21,11 @@ const ASSISTANT_CONFIG = {
       },
     ],
   },
-  voice: {
-    provider: '11labs',
-    voiceId: 'chris',
-  },
-  firstMessage: "Hey there! I'm Alex from NexaCRM. Thanks for taking the time to chat. I'd love to learn about how you're currently managing your customer relationships — what CRM tools are you using today?",
+  voice: { provider: '11labs', voiceId: 'chris' },
+  firstMessage:
+    "Hey there! I'm Alex from NexaCRM. Thanks for taking the time to chat. I'd love to learn about how you're currently managing your customer relationships — what CRM tools are you using today?",
   name: 'NexaCRM Sales Assistant',
 };
-
-function getEnv(key) {
-  if (typeof window === 'undefined') return '';
-  return import.meta.env[key] || localStorage.getItem(key) || '';
-}
 
 export function useVapi() {
   const [status, setStatus] = useState('idle');
@@ -42,9 +36,9 @@ export function useVapi() {
   const vapiRef = useRef(null);
 
   useEffect(() => {
-    const publicKey = getEnv('VITE_VAPI_PUBLIC_KEY');
+    const publicKey = getPublic('VAPI_PUBLIC_KEY');
     if (!publicKey) {
-      setError('VITE_VAPI_PUBLIC_KEY is not configured. Please add it to your .env file or configuration.');
+      setError('VAPI_PUBLIC_KEY is not configured. Please add it to your environment variables.');
       return;
     }
 
@@ -57,39 +51,25 @@ export function useVapi() {
         setStatus('live');
         setError(null);
       });
-
       vapi.on('call-end', () => {
         setStatus('ended');
         setIsSpeaking(false);
       });
-
-      vapi.on('speech-start', () => {
-        setIsSpeaking(true);
-      });
-
-      vapi.on('speech-end', () => {
-        setIsSpeaking(false);
-      });
-
+      vapi.on('speech-start', () => setIsSpeaking(true));
+      vapi.on('speech-end', () => setIsSpeaking(false));
       vapi.on('message', (msg) => {
-        if (msg.type === 'transcript') {
-          if (msg.transcriptType === 'final') {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: Date.now() + Math.random(),
-                role: msg.role,
-                text: msg.transcript,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              },
-            ]);
-          }
-        }
-        if (msg.type === 'conversation-update') {
-          // We get structured conversation updates too
+        if (msg.type === 'transcript' && msg.transcriptType === 'final') {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now() + Math.random(),
+              role: msg.role,
+              text: msg.transcript,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            },
+          ]);
         }
       });
-
       vapi.on('error', (err) => {
         console.error('Vapi error:', err);
         setError(err?.message || 'An error occurred during the call.');
@@ -101,7 +81,7 @@ export function useVapi() {
         try {
           vapi.stop();
         } catch {
-          // Safe ignore if stop fails on cleanup
+          // ignore
         }
       };
     } catch (err) {
@@ -112,25 +92,18 @@ export function useVapi() {
 
   const startCall = useCallback(async () => {
     if (!vapiRef.current) return;
-
     try {
       setError(null);
       setMessages([]);
       setStatus('connecting');
       setCallId(null);
 
-      const assistantId = getEnv('VITE_VAPI_ASSISTANT_ID');
+      const assistantId = getPublic('VAPI_ASSISTANT_ID');
+      const call = assistantId
+        ? await vapiRef.current.start(assistantId)
+        : await vapiRef.current.start(ASSISTANT_CONFIG);
 
-      let call;
-      if (assistantId) {
-        call = await vapiRef.current.start(assistantId);
-      } else {
-        call = await vapiRef.current.start(ASSISTANT_CONFIG);
-      }
-
-      if (call?.id) {
-        setCallId(call.id);
-      }
+      if (call?.id) setCallId(call.id);
     } catch (err) {
       console.error('Failed to start call:', err);
       setError(err?.message || 'Failed to start the call. Please check your configuration.');
@@ -146,14 +119,5 @@ export function useVapi() {
     }
   }, []);
 
-  return {
-    status,
-    messages,
-    callId,
-    isSpeaking,
-    error,
-    startCall,
-    endCall,
-    setStatus,
-  };
+  return { status, messages, callId, isSpeaking, error, startCall, endCall, setStatus };
 }
