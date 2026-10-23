@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'A non-empty transcript array is required.' });
   }
 
-  const selectedModel = model || process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const selectedModel = model || process.env.GEMINI_MODEL || 'gemini-3.8-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const formattedTranscript = transcript
