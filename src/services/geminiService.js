@@ -76,10 +76,36 @@ function extractJson(text) {
 }
 
 export async function generateCallSummary(transcript) {
+  // 1. First, attempt secure backend call to /api/summary
+  // This keeps GEMINI_API_KEY safe on Vercel without exposing it to the browser.
+  try {
+    const apiRes = await fetch('/api/summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript }),
+    });
+
+    if (apiRes.ok) {
+      return await apiRes.json();
+    }
+
+    // If server returned an error other than 404/405, throw the error message
+    if (apiRes.status !== 404 && apiRes.status !== 405) {
+      const errData = await apiRes.json().catch(() => ({}));
+      throw new Error(errData?.error || `Server summary failed with status ${apiRes.status}`);
+    }
+  } catch (err) {
+    // If /api/summary is not reachable (e.g. local vite dev without serverless), fall back to client
+    if (!err.message?.includes('404')) {
+      console.warn('Backend /api/summary unavailable, using fallback:', err.message);
+    }
+  }
+
+  // 2. Client-side fallback (for local dev or when keys are provided in browser)
   const apiKey = getConfig('GEMINI_API_KEY');
 
   if (!apiKey) {
-    throw new Error('Gemini API key is not configured. Please add GEMINI_API_KEY to your environment variables or settings.');
+    throw new Error('Gemini API key is not configured. Please add GEMINI_API_KEY to your Vercel Environment Variables.');
   }
 
   const formattedTranscript = transcript

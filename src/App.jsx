@@ -250,5 +250,7 @@ export default function App() {
     return <SetupScreen onComplete={() => setIsConfigured(true)} />;
   }
 
-  return <VoiceAgentApp onOpenSettings={() => setIsConfigured(false)} />;
+  // When configured from Vercel environment variables, do not pass onOpenSettings
+  // so no visitor or user can see a settings button or view API keys!
+  return <VoiceAgentApp />;
 }

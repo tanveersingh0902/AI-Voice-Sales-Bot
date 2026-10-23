@@ -3,14 +3,27 @@ import { getConfig } from './config';
 const VAPI_API_URL = 'https://api.vapi.ai';
 
 export async function fetchRecordingUrl(callId) {
+  if (!callId) {
+    return null;
+  }
+
+  // 1. Try secure backend endpoint on Vercel
+  // Keeps VAPI_PRIVATE_KEY 100% secret on the server
+  try {
+    const apiRes = await fetch(`/api/recording?callId=${encodeURIComponent(callId)}`);
+    if (apiRes.ok) {
+      const data = await apiRes.json();
+      return data?.recordingUrl || null;
+    }
+  } catch (err) {
+    console.warn('Backend /api/recording unavailable, checking fallback:', err.message);
+  }
+
+  // 2. Client-side fallback (for local development)
   const privateKey = getConfig('VAPI_PRIVATE_KEY');
 
   if (!privateKey) {
     console.warn('VAPI_PRIVATE_KEY not configured — cannot fetch recording.');
-    return null;
-  }
-
-  if (!callId) {
     return null;
   }
 
