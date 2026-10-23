@@ -1,3 +1,5 @@
+import { getConfig } from './config';
+
 const DEFAULT_MODEL = 'gemini-2.0-flash';
 
 async function callGeminiApi(model, apiKey, prompt) {
@@ -64,16 +66,20 @@ async function callGeminiApi(model, apiKey, prompt) {
   });
 }
 
-function getEnv(key) {
-  if (typeof window === 'undefined') return '';
-  return import.meta.env[key] || localStorage.getItem(key) || '';
+function extractJson(text) {
+  const trimmed = text.trim();
+  const match = trimmed.match(/\{[\s\S]*\}/);
+  if (match) {
+    return JSON.parse(match[0]);
+  }
+  return JSON.parse(trimmed);
 }
 
 export async function generateCallSummary(transcript) {
-  const apiKey = getEnv('VITE_GEMINI_API_KEY');
+  const apiKey = getConfig('GEMINI_API_KEY');
 
   if (!apiKey) {
-    throw new Error('Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file or settings.');
+    throw new Error('Gemini API key is not configured. Please add GEMINI_API_KEY to your environment variables or settings.');
   }
 
   const formattedTranscript = transcript
@@ -98,7 +104,7 @@ Respond with ONLY valid JSON in this exact format:
 If no objections were raised, use an empty array. Always provide at least one next step.`;
 
   try {
-    const configuredModel = getEnv('VITE_GEMINI_MODEL') || DEFAULT_MODEL;
+    const configuredModel = getConfig('GEMINI_MODEL') || DEFAULT_MODEL;
     const response = await callGeminiApi(configuredModel, apiKey, prompt);
 
     if (!response.ok) {
@@ -115,9 +121,7 @@ If no objections were raised, use an empty array. Always provide at least one ne
       throw new Error('Empty response from Gemini API.');
     }
 
-    const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
-    const parsed = JSON.parse(cleanedText);
-    return parsed;
+    return extractJson(text);
   } catch (err) {
     if (err instanceof SyntaxError) {
       throw new Error('Failed to parse Gemini response as JSON. The AI returned an unexpected format.');

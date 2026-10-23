@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Vapi from '@vapi-ai/web';
-import { getPublic } from '../services/publicConfig';
+import { getConfig } from '../services/config';
 
 function getVapiConstructor() {
   if (typeof Vapi === 'function') return Vapi;
@@ -32,13 +32,15 @@ export function useVapi() {
   const [messages, setMessages] = useState([]);
   const [callId, setCallId] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(() => {
+    const key = getConfig('VAPI_PUBLIC_KEY');
+    return key ? null : 'VAPI_PUBLIC_KEY is not configured. Please add it in settings or environment variables.';
+  });
   const vapiRef = useRef(null);
 
   useEffect(() => {
-    const publicKey = getPublic('VAPI_PUBLIC_KEY');
+    const publicKey = getConfig('VAPI_PUBLIC_KEY');
     if (!publicKey) {
-      setError('VAPI_PUBLIC_KEY is not configured. Please add it to your environment variables.');
       return;
     }
 
@@ -86,19 +88,24 @@ export function useVapi() {
       };
     } catch (err) {
       console.error('Failed to initialize Vapi:', err);
-      setError(err?.message || 'Failed to initialize voice assistant.');
+      queueMicrotask(() => {
+        setError(err?.message || 'Failed to initialize voice assistant.');
+      });
     }
   }, []);
 
   const startCall = useCallback(async () => {
-    if (!vapiRef.current) return;
+    if (!vapiRef.current) {
+      return;
+    }
+
     try {
       setError(null);
       setMessages([]);
       setStatus('connecting');
       setCallId(null);
 
-      const assistantId = getPublic('VAPI_ASSISTANT_ID');
+      const assistantId = getConfig('VAPI_ASSISTANT_ID');
       const call = assistantId
         ? await vapiRef.current.start(assistantId)
         : await vapiRef.current.start(ASSISTANT_CONFIG);

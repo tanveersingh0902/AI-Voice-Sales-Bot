@@ -1,7 +1,12 @@
+import { useState } from 'react';
 import SalesBadge from './SalesBadge';
 import AudioPlayer from './AudioPlayer';
 
-export default function SummaryCard({ summary, recordingUrl }) {
+export default function SummaryCard({ summary, recordingUrl, date }) {
+  const [createdDate] = useState(
+    () => date || summary?.date || new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+  );
+
   if (!summary) return null;
 
   return (
@@ -11,7 +16,7 @@ export default function SummaryCard({ summary, recordingUrl }) {
         <div>
           <h3 className="text-lg font-semibold">{summary.customerName || 'Unknown Customer'}</h3>
           <p className="text-sm text-slate-400">
-            {new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+            {createdDate}
           </p>
         </div>
         <SalesBadge status={summary.salesStatus} />

@@ -4,6 +4,7 @@ import { useCallTimer } from './hooks/useCallTimer';
 import { useCallHistory } from './hooks/useCallHistory';
 import { generateCallSummary } from './services/geminiService';
 import { fetchRecordingUrl } from './services/vapiRecording';
+import { getConfig } from './services/config';
 import SetupScreen from './components/SetupScreen';
 import StatusBadge from './components/StatusBadge';
 import BotAvatar from './components/BotAvatar';
@@ -242,10 +243,7 @@ function VoiceAgentApp({ onOpenSettings }) {
 export default function App() {
   const [isConfigured, setIsConfigured] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return Boolean(
-      import.meta.env.VITE_VAPI_PUBLIC_KEY ||
-      localStorage.getItem('VITE_VAPI_PUBLIC_KEY')
-    );
+    return Boolean(getConfig('VAPI_PUBLIC_KEY'));
   });
 
   if (!isConfigured) {

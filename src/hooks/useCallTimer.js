@@ -1,24 +1,34 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export function useCallTimer(isActive) {
   const [seconds, setSeconds] = useState(0);
-  const intervalRef = useRef(null);
+  const startTimeRef = useRef(null);
 
   useEffect(() => {
-    if (isActive) {
-      setSeconds(0);
-      intervalRef.current = setInterval(() => {
-        setSeconds((s) => s + 1);
-      }, 1000);
-    } else {
-      clearInterval(intervalRef.current);
+    if (!isActive) {
+      startTimeRef.current = null;
+      return;
     }
-    return () => clearInterval(intervalRef.current);
+
+    startTimeRef.current = Date.now();
+    const interval = setInterval(() => {
+      if (startTimeRef.current) {
+        setSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
   }, [isActive]);
 
-  const formatted = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  const displaySeconds = isActive ? seconds : 0;
+  const formatted = `${String(Math.floor(displaySeconds / 60)).padStart(2, '0')}:${String(displaySeconds % 60).padStart(2, '0')}`;
 
-  const reset = useCallback(() => setSeconds(0), []);
+  const reset = useCallback(() => {
+    setSeconds(0);
+    startTimeRef.current = null;
+  }, []);
 
-  return { seconds, formatted, reset };
+  return { seconds: displaySeconds, formatted, reset };
 }

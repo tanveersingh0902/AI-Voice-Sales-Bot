@@ -23,10 +23,18 @@ export default function AudioPlayer({ src }) {
   const togglePlay = () => {
     if (isPlaying) {
       audioRef.current?.pause();
+      setIsPlaying(false);
     } else {
-      audioRef.current?.play();
+      const playPromise = audioRef.current?.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => setIsPlaying(true))
+          .catch((err) => {
+            console.error('Audio playback failed:', err);
+            setIsPlaying(false);
+          });
+      }
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleSeek = (e) => {
@@ -43,6 +51,7 @@ export default function AudioPlayer({ src }) {
         onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
         onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
         onEnded={() => setIsPlaying(false)}
+        onError={() => setIsPlaying(false)}
       />
 
       <button
