@@ -20,6 +20,7 @@ function VoiceAgentApp({ onOpenSettings }) {
   const [activeTab, setActiveTab] = useState('call');
   const [showConsent, setShowConsent] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [isLoadingRecording, setIsLoadingRecording] = useState(false);
   const [currentSummary, setCurrentSummary] = useState(null);
   const [currentRecordingUrl, setCurrentRecordingUrl] = useState(null);
   const [summaryError, setSummaryError] = useState(null);
@@ -36,16 +37,26 @@ function VoiceAgentApp({ onOpenSettings }) {
   } = useVapi();
 
   const { formatted: timerFormatted } = useCallTimer(status === 'live');
-  const { history, addCall, clearHistory } = useCallHistory();
+  const { history, addCall, updateCall, clearHistory } = useCallHistory();
 
   const handleStartRequest = () => {
     setCurrentSummary(null);
     setCurrentRecordingUrl(null);
     setSummaryError(null);
-    setShowConsent(true);
+
+    // Fast-path: If user has already consented, connect call immediately
+    const hasConsented = typeof window !== 'undefined' && localStorage.getItem('vapi_call_consent');
+    if (hasConsented) {
+      startCall();
+    } else {
+      setShowConsent(true);
+    }
   };
 
   const handleConsentAccept = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('vapi_call_consent', 'true');
+    }
     setShowConsent(false);
     startCall();
   };
@@ -66,40 +77,51 @@ function VoiceAgentApp({ onOpenSettings }) {
     }
 
     setIsGeneratingSummary(true);
+    setIsLoadingRecording(true);
     setSummaryError(null);
 
+    const callRecordId = currentCallId || Date.now().toString();
+
+    // Kick off recording fetch in background (non-blocking)
+    const recordingPromise = fetchRecordingUrl(currentCallId)
+      .catch((err) => {
+        console.error('Recording fetch failed:', err);
+        return null;
+      });
+
     try {
-      const [summary, recordingUrl] = await Promise.all([
-        generateCallSummary(currentMessages).catch((err) => {
-          console.error('Summary generation failed:', err);
-          setSummaryError(err.message);
-          return null;
-        }),
-        fetchRecordingUrl(currentCallId).catch((err) => {
-          console.error('Recording fetch failed:', err);
-          return null;
-        }),
-      ]);
+      // 1. Generate summary directly — shows immediately upon completion
+      const summary = await generateCallSummary(currentMessages);
 
       setCurrentSummary(summary);
-      setCurrentRecordingUrl(recordingUrl);
+      setIsGeneratingSummary(false); // Summary is shown to user right away!
 
+      // Add to history immediately with available details
       addCall({
-        id: currentCallId || Date.now().toString(),
+        id: callRecordId,
         date: new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
         duration,
         transcript: currentMessages,
-        recordingUrl,
+        recordingUrl: null,
         summary,
         salesStatus: summary?.salesStatus || 'No Response',
       });
+
+      // 2. Attach recording asynchronously as soon as it resolves
+      recordingPromise.then((recUrl) => {
+        setIsLoadingRecording(false);
+        if (recUrl) {
+          setCurrentRecordingUrl(recUrl);
+          updateCall(callRecordId, { recordingUrl: recUrl });
+        }
+      });
     } catch (err) {
-      console.error('Post-call processing failed:', err);
+      console.error('Post-call summary generation failed:', err);
       setSummaryError(err.message);
-    } finally {
       setIsGeneratingSummary(false);
+      setIsLoadingRecording(false);
     }
-  }, [callId, messages, timerFormatted, endCall, addCall]);
+  }, [callId, messages, timerFormatted, endCall, addCall, updateCall]);
 
   const handleNewCall = () => {
     setCurrentSummary(null);
@@ -210,7 +232,11 @@ function VoiceAgentApp({ onOpenSettings }) {
                   <SummaryLoader />
                 ) : (
                   <>
-                    <SummaryCard summary={currentSummary} recordingUrl={currentRecordingUrl} />
+                    <SummaryCard
+                      summary={currentSummary}
+                      recordingUrl={currentRecordingUrl}
+                      isLoadingRecording={isLoadingRecording}
+                    />
                     <div className="mt-4 flex justify-center">
                       <button
                         onClick={handleNewCall}

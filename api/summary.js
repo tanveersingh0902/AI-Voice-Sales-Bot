@@ -46,6 +46,57 @@ Respond with ONLY valid JSON in this exact format:
 
 If no objections were raised, use an empty array. Always provide at least one next step.`;
 
+  const generationConfig = {
+    responseMimeType: 'application/json',
+    responseSchema: {
+      type: 'OBJECT',
+      properties: {
+        customerName: {
+          type: 'STRING',
+          description: "The customer's name if mentioned, otherwise 'Unknown Customer'",
+        },
+        summary: {
+          type: 'STRING',
+          description: 'A 2-3 sentence summary of the call covering key discussion points and outcome',
+        },
+        customerRequirements: {
+          type: 'ARRAY',
+          description: 'Array of customer requirements or needs',
+          items: { type: 'STRING' },
+        },
+        objections: {
+          type: 'ARRAY',
+          description: 'Array of customer objections or concerns, empty array if none',
+          items: { type: 'STRING' },
+        },
+        nextSteps: {
+          type: 'ARRAY',
+          description: 'Array of actionable next steps',
+          items: { type: 'STRING' },
+        },
+        salesStatus: {
+          type: 'STRING',
+          description: 'One of: Converted, Interested, Follow-up Required, Not Interested, Demo Requested, No Response',
+        },
+      },
+      required: [
+        'customerName',
+        'summary',
+        'customerRequirements',
+        'objections',
+        'nextSteps',
+        'salesStatus',
+      ],
+    },
+  };
+
+  // Set low thinking level for Gemini 3.x models to eliminate multi-second reasoning delay
+  if (selectedModel.startsWith('gemini-3') || selectedModel.includes('3.')) {
+    generationConfig.thinkingConfig = { thinkingLevel: 'LOW' };
+  } else if (selectedModel.includes('2.5')) {
+    generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  }
+
   const payload = {
     contents: [
       {
@@ -53,49 +104,7 @@ If no objections were raised, use an empty array. Always provide at least one ne
         parts: [{ text: prompt }],
       },
     ],
-    generationConfig: {
-      responseMimeType: 'application/json',
-      responseSchema: {
-        type: 'OBJECT',
-        properties: {
-          customerName: {
-            type: 'STRING',
-            description: "The customer's name if mentioned, otherwise 'Unknown Customer'",
-          },
-          summary: {
-            type: 'STRING',
-            description: 'A 2-3 sentence summary of the call covering key discussion points and outcome',
-          },
-          customerRequirements: {
-            type: 'ARRAY',
-            description: 'Array of customer requirements or needs',
-            items: { type: 'STRING' },
-          },
-          objections: {
-            type: 'ARRAY',
-            description: 'Array of customer objections or concerns, empty array if none',
-            items: { type: 'STRING' },
-          },
-          nextSteps: {
-            type: 'ARRAY',
-            description: 'Array of actionable next steps',
-            items: { type: 'STRING' },
-          },
-          salesStatus: {
-            type: 'STRING',
-            description: 'One of: Converted, Interested, Follow-up Required, Not Interested, Demo Requested, No Response',
-          },
-        },
-        required: [
-          'customerName',
-          'summary',
-          'customerRequirements',
-          'objections',
-          'nextSteps',
-          'salesStatus',
-        ],
-      },
-    },
+    generationConfig,
   };
 
   try {
@@ -130,4 +139,3 @@ If no objections were raised, use an empty array. Always provide at least one ne
     return res.status(500).json({ error: err.message || 'Internal server error processing summary' });
   }
 }
-

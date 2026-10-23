@@ -2,7 +2,7 @@ import { useState } from 'react';
 import SalesBadge from './SalesBadge';
 import AudioPlayer from './AudioPlayer';
 
-export default function SummaryCard({ summary, recordingUrl, date }) {
+export default function SummaryCard({ summary, recordingUrl, date, isLoadingRecording }) {
   const [createdDate] = useState(
     () => date || summary?.date || new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
   );
@@ -84,7 +84,7 @@ export default function SummaryCard({ summary, recordingUrl, date }) {
         <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-2">
           Call Recording
         </h4>
-        <AudioPlayer src={recordingUrl} />
+        <AudioPlayer src={recordingUrl} isLoading={isLoadingRecording} />
       </div>
     </div>
   );

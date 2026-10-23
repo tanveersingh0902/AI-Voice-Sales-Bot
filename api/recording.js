@@ -22,12 +22,15 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'callId query parameter is required.' });
   }
 
-  const maxRetries = 5;
-  const pollIntervalMs = 3000;
+  const maxRetries = 4;
+  const pollIntervalMs = 2000;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      await new Promise((r) => setTimeout(r, pollIntervalMs));
+      // Check immediately on the first attempt without sleeping
+      if (attempt > 1) {
+        await new Promise((r) => setTimeout(r, pollIntervalMs));
+      }
 
       const response = await fetch(`https://api.vapi.ai/call/${encodeURIComponent(callId)}`, {
         headers: {
@@ -55,4 +58,3 @@ export default async function handler(req, res) {
 
   return res.status(200).json({ recordingUrl: null });
 }
-

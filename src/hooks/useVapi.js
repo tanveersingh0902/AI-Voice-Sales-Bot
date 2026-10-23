@@ -9,10 +9,11 @@ function getVapiConstructor() {
   return Vapi;
 }
 
+// Low-latency default config (sub-500ms response time)
 const ASSISTANT_CONFIG = {
   model: {
     provider: 'openai',
-    model: 'gpt-4o',
+    model: 'gpt-4o-mini',
     messages: [
       {
         role: 'system',
@@ -21,7 +22,7 @@ const ASSISTANT_CONFIG = {
       },
     ],
   },
-  voice: { provider: '11labs', voiceId: 'chris' },
+  voice: { provider: '11labs', voiceId: 'chris', model: 'eleven_turbo_v2_5' },
   firstMessage:
     "Hey there! I'm Alex from NexaCRM. Thanks for taking the time to chat. I'd love to learn about how you're currently managing your customer relationships — what CRM tools are you using today?",
   name: 'NexaCRM Sales Assistant',
@@ -104,6 +105,11 @@ export function useVapi() {
       setMessages([]);
       setStatus('connecting');
       setCallId(null);
+
+      // Pre-request microphone in parallel to avoid WebRTC permission delay
+      if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => {});
+      }
 
       const assistantId = getConfig('VAPI_ASSISTANT_ID');
       const call = assistantId

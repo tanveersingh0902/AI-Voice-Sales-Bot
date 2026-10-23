@@ -27,12 +27,14 @@ export async function fetchRecordingUrl(callId) {
     return null;
   }
 
-  const maxRetries = 5;
-  const pollIntervalMs = 3000;
+  const maxRetries = 4;
+  const pollIntervalMs = 2000;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      await new Promise((r) => setTimeout(r, pollIntervalMs));
+      if (attempt > 1) {
+        await new Promise((r) => setTimeout(r, pollIntervalMs));
+      }
 
       const response = await fetch(`${VAPI_API_URL}/call/${callId}`, {
         headers: {

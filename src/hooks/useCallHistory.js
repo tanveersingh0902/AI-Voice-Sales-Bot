@@ -30,9 +30,15 @@ export function useCallHistory() {
     setHistory((prev) => [callData, ...prev]);
   }, []);
 
+  const updateCall = useCallback((callId, updates) => {
+    setHistory((prev) =>
+      prev.map((call) => (call.id === callId ? { ...call, ...updates } : call))
+    );
+  }, []);
+
   const clearHistory = useCallback(() => {
     setHistory([]);
   }, []);
 
-  return { history, addCall, clearHistory };
+  return { history, addCall, updateCall, clearHistory };
 }
